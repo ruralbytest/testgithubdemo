@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TodoFlow is a React-based todo application with TypeScript, Vite, and Tailwind CSS. The app emphasizes beautiful, production-grade UI design with gradients, backdrop blur effects, and smooth transitions. Data is persisted in browser localStorage.
+Habit Tracker is a React-based habit tracking application with TypeScript, Vite, and Tailwind CSS. The app emphasizes beautiful, production-grade UI design with gradients, backdrop blur effects, and smooth transitions. Data is persisted in browser localStorage.
 
 ## Development Commands
 

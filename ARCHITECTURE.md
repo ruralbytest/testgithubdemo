@@ -1,4 +1,4 @@
-# TodoFlow Architecture Diagrams
+# Habit Tracker Architecture Diagrams
 
 ## 1. Component Hierarchy
 
