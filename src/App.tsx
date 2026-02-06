@@ -30,10 +30,10 @@ function App() {
               <CheckSquare className="text-white" size={32} />
             </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              TodoFlow
+              Habit Tracker
             </h1>
           </div>
-          <p className="text-gray-600 text-lg">Stay organized and productive</p>
+          <p className="text-gray-600 text-lg">Build better habits, one day at a time</p>
         </div>
 
         {/* Add Todo Form */}

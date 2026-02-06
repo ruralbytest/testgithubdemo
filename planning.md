@@ -2,7 +2,7 @@
 
 ## Context
 
-TodoFlow currently uses browser localStorage for data persistence, which has several limitations:
+Habit Tracker currently uses browser localStorage for data persistence, which has several limitations:
 - **Critical Bug**: A race condition between useEffect hooks causes data loss on page reload (save effect overwrites data before load effect completes)
 - **Limited Storage**: ~5-10MB browser quota
 - **No Multi-Device Sync**: Data is isolated to single browser

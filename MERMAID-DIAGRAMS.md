@@ -1,4 +1,4 @@
-# TodoFlow Mermaid Diagrams
+# Habit Tracker Mermaid Diagrams
 
 ## 1. End-to-End Data Flow (System Architecture)
 
