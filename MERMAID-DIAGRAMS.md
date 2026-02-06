@@ -1,0 +1,342 @@
+# TodoFlow Mermaid Diagrams
+
+## 1. End-to-End Data Flow (System Architecture)
+
+```mermaid
+graph TB
+    User[👤 User] -->|Interacts| UI[🖥️ UI Components]
+
+    subgraph "React Application"
+        UI -->|Renders| TodoForm[TodoForm Component]
+        UI -->|Renders| TodoItem[TodoItem Component]
+        UI -->|Renders| TodoFilter[TodoFilter Component]
+        UI -->|Renders| TodoStats[TodoStats Component]
+
+        TodoForm -->|onAddTodo| App[App.tsx Container]
+        TodoItem -->|onToggle/onUpdate/onDelete| App
+        TodoFilter -->|onFilterChange| App
+        TodoStats -->|onClearCompleted/onToggleAll| App
+
+        App -->|Uses| Hook[useTodos Hook]
+
+        subgraph "State Management (useTodos)"
+            Hook -->|Manages| State["State: todos array & filter"]
+            Hook -->|Computes| Filtered[Filtered Todos]
+            Hook -->|Computes| Stats[Statistics]
+            Hook -->|Provides| Operations[CRUD Operations]
+        end
+
+        State -->|useEffect| Storage[Storage Utils]
+    end
+
+    Storage -->|saveTodos| LocalStorage[(localStorage)]
+    LocalStorage -->|loadTodos| Storage
+
+    Hook -->|Returns Data & Callbacks| App
+    App -->|Props| UI
+    UI -->|Displays| User
+
+    style User fill:#e1f5ff
+    style LocalStorage fill:#fff4e6
+    style Hook fill:#f0e6ff
+    style State fill:#ffe6f0
+```
+
+## 2. Sequence Diagram: Adding a Todo
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant TodoForm
+    participant App
+    participant useTodos
+    participant Storage
+    participant localStorage
+
+    User->>TodoForm: Types "Buy milk" & submits
+    TodoForm->>TodoForm: handleSubmit(e)
+    TodoForm->>App: onAddTodo("Buy milk")
+    App->>useTodos: addTodo("Buy milk")
+
+    useTodos->>useTodos: Generate UUID
+    useTodos->>useTodos: Create Todo object
+    useTodos->>useTodos: setTodos([newTodo, ...prev])
+
+    Note over useTodos: State Update Triggers useEffect
+
+    useTodos->>Storage: saveTodos(todos)
+    Storage->>localStorage: setItem('todos-app-data', JSON)
+    localStorage-->>Storage: Success
+
+    useTodos->>useTodos: Recalculate filteredTodos
+    useTodos->>useTodos: Recalculate stats
+    useTodos-->>App: Return updated state
+
+    App->>TodoForm: Re-render with empty input
+    App->>TodoItem: Render new todo
+    TodoItem-->>User: Display "Buy milk"
+```
+
+## 3. Sequence Diagram: Toggling a Todo
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant TodoItem
+    participant App
+    participant useTodos
+    participant Storage
+    participant localStorage
+
+    User->>TodoItem: Clicks checkbox
+    TodoItem->>App: onToggle(todo.id)
+    App->>useTodos: toggleTodo(todo.id)
+
+    useTodos->>useTodos: Find todo by id
+    useTodos->>useTodos: Toggle completed status
+    useTodos->>useTodos: Update updatedAt timestamp
+    useTodos->>useTodos: setTodos([...updated])
+
+    Note over useTodos: State Update Triggers useEffect
+
+    useTodos->>Storage: saveTodos(todos)
+    Storage->>localStorage: setItem('todos-app-data', JSON)
+    localStorage-->>Storage: Success
+
+    useTodos->>useTodos: Recalculate stats
+    useTodos-->>App: Return updated state
+
+    App->>TodoItem: Re-render with completed=true
+    TodoItem-->>User: Show checkmark & strikethrough
+```
+
+## 4. Sequence Diagram: App Initialization (Load from Storage)
+
+```mermaid
+sequenceDiagram
+    actor Browser
+    participant App
+    participant useTodos
+    participant Storage
+    participant localStorage
+
+    Browser->>App: Mount App component
+    App->>useTodos: Initialize hook
+
+    Note over useTodos: useEffect runs on mount
+
+    useTodos->>Storage: loadTodos()
+    Storage->>localStorage: getItem('todos-app-data')
+    localStorage-->>Storage: Return JSON string
+
+    Storage->>Storage: JSON.parse(data)
+    Storage->>Storage: Convert date strings to Date objects
+    Storage-->>useTodos: Return Todo[]
+
+    useTodos->>useTodos: setTodos(loadedTodos)
+    useTodos->>useTodos: Calculate filteredTodos
+    useTodos->>useTodos: Calculate stats
+    useTodos-->>App: Return state & operations
+
+    App->>App: Render components with data
+    App-->>Browser: Display UI with todos
+```
+
+## 5. Sequence Diagram: Filtering Todos
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant TodoFilter
+    participant App
+    participant useTodos
+
+    User->>TodoFilter: Clicks "Active" button
+    TodoFilter->>App: onFilterChange('active')
+    App->>useTodos: setFilter('active')
+
+    useTodos->>useTodos: Update filter state
+    useTodos->>useTodos: Recalculate filteredTodos
+    Note over useTodos: Filter todos by !completed status
+
+    useTodos-->>App: Return filtered todos
+    App->>TodoItem: Render only active todos
+    App->>TodoFilter: Highlight "Active" button
+    TodoItem-->>User: Display filtered list
+```
+
+## 6. Data Model & Relationships (ERD-style)
+
+```mermaid
+erDiagram
+    TODO {
+        string id PK "UUID generated by crypto.randomUUID()"
+        string text "Todo text content"
+        boolean completed "Completion status"
+        Date createdAt "Creation timestamp"
+        Date updatedAt "Last modification timestamp"
+    }
+
+    FILTER_STATE {
+        string value "all | active | completed"
+    }
+
+    STATISTICS {
+        number total "Total todos count"
+        number active "Uncompleted todos count"
+        number completed "Completed todos count"
+    }
+
+    LOCAL_STORAGE {
+        string key "todos-app-data"
+        string value "JSON serialized Todo array"
+    }
+
+    TODO ||--o{ LOCAL_STORAGE : "persisted in"
+    TODO ||--|| FILTER_STATE : "filtered by"
+    TODO ||--|| STATISTICS : "calculated from"
+```
+
+## 7. State Management Flow
+
+```mermaid
+flowchart TD
+    Start([User Action]) --> Input{Action Type?}
+
+    Input -->|Add Todo| AddTodo[addTodo function]
+    Input -->|Toggle Todo| ToggleTodo[toggleTodo function]
+    Input -->|Update Todo| UpdateTodo[updateTodo function]
+    Input -->|Delete Todo| DeleteTodo[deleteTodo function]
+    Input -->|Clear Completed| ClearCompleted[clearCompleted function]
+    Input -->|Toggle All| ToggleAll[toggleAll function]
+    Input -->|Change Filter| ChangeFilter[setFilter function]
+
+    AddTodo --> SetState[setTodos: Update State]
+    ToggleTodo --> SetState
+    UpdateTodo --> SetState
+    DeleteTodo --> SetState
+    ClearCompleted --> SetState
+    ToggleAll --> SetState
+
+    ChangeFilter --> FilterState[setFilter: Update Filter]
+
+    SetState --> Effect[useEffect Triggered]
+    Effect --> Save[saveTodos]
+    Save --> LS[(localStorage)]
+
+    SetState --> Compute[Recompute Derived State]
+    FilterState --> Compute
+
+    Compute --> FilteredTodos[Calculate filteredTodos]
+    Compute --> Stats[Calculate stats]
+
+    FilteredTodos --> Render[React Re-render]
+    Stats --> Render
+
+    Render --> UI[Update UI]
+    UI --> End([User Sees Changes])
+
+    style Start fill:#e1f5ff
+    style End fill:#e1f5ff
+    style LS fill:#fff4e6
+    style Effect fill:#ffe6f0
+```
+
+## 8. Component Interaction Flow
+
+```mermaid
+graph LR
+    subgraph "User Interface Layer"
+        TodoForm[📝 TodoForm]
+        TodoItem[☑️ TodoItem]
+        TodoFilter[🔍 TodoFilter]
+        TodoStats[📊 TodoStats]
+    end
+
+    subgraph "Container Layer"
+        App[🎯 App.tsx]
+    end
+
+    subgraph "Logic Layer"
+        Hook[⚙️ useTodos Hook]
+
+        subgraph "Hook Internals"
+            State[State Management]
+            Effects[Side Effects]
+            Callbacks[Operations]
+        end
+    end
+
+    subgraph "Persistence Layer"
+        Storage[💾 Storage Utils]
+        LS[(localStorage)]
+    end
+
+    TodoForm -->|onAddTodo| App
+    TodoItem -->|onToggle, onUpdate, onDelete| App
+    TodoFilter -->|onFilterChange| App
+    TodoStats -->|onClearCompleted, onToggleAll| App
+
+    App -->|Uses| Hook
+    Hook -->|Contains| State
+    Hook -->|Contains| Effects
+    Hook -->|Contains| Callbacks
+
+    Effects -->|Read/Write| Storage
+    Storage -->|Persist| LS
+
+    Hook -->|Returns| App
+    App -->|Props| TodoForm
+    App -->|Props| TodoItem
+    App -->|Props| TodoFilter
+    App -->|Props| TodoStats
+
+    style App fill:#f0e6ff
+    style Hook fill:#ffe6f0
+    style LS fill:#fff4e6
+```
+
+## 9. Complete CRUD Operations Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> AppInitialized: Browser loads app
+
+    AppInitialized --> LoadingData: useEffect runs
+    LoadingData --> DataLoaded: loadTodos()
+
+    DataLoaded --> Idle: Ready for user input
+
+    Idle --> Creating: User adds todo
+    Creating --> Saving: addTodo() called
+    Saving --> Persisting: setTodos() updates state
+    Persisting --> Idle: saveTodos() to localStorage
+
+    Idle --> Reading: User changes filter
+    Reading --> Filtering: setFilter() called
+    Filtering --> Idle: filteredTodos recalculated
+
+    Idle --> Updating: User edits todo
+    Updating --> Saving2: updateTodo() called
+    Saving2 --> Persisting2: setTodos() updates state
+    Persisting2 --> Idle: saveTodos() to localStorage
+
+    Idle --> Toggling: User checks/unchecks
+    Toggling --> Saving3: toggleTodo() called
+    Saving3 --> Persisting3: setTodos() updates state
+    Persisting3 --> Idle: saveTodos() to localStorage
+
+    Idle --> Deleting: User deletes todo
+    Deleting --> Saving4: deleteTodo() called
+    Saving4 --> Persisting4: setTodos() updates state
+    Persisting4 --> Idle: saveTodos() to localStorage
+
+    Idle --> [*]: User closes browser
+```
+
+## How to View These Diagrams
+
+1. **GitHub**: If you push this to GitHub, the diagrams will render automatically
+2. **VS Code**: Install "Markdown Preview Mermaid Support" extension
+3. **Online**: Copy the code blocks to https://mermaid.live/
+4. **IDE**: Most modern IDEs support Mermaid rendering in markdown preview
